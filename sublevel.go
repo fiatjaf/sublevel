@@ -23,12 +23,16 @@ type AbstractLevel struct {
 	err     error
 }
 
+func (a AbstractLevel) Close() error {
+	return a.leveldb.Close()
+}
+
 func (a AbstractLevel) Sub(store string) (*Sublevel, error) {
 	if a.err != nil {
 		return &Sublevel{}, a.err
 	}
 	return &Sublevel{
-		namespace: []byte(store),
+		namespace: []byte("!" + store + "!"),
 		db:        a.leveldb,
 	}, nil
 }
