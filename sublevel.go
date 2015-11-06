@@ -125,36 +125,59 @@ func (si SubIterator) Error() error {
 }
 
 /* transactions */
-func (s Sublevel) NewBatch() *Batch {
-	return &Batch{
+func (s Sublevel) NewBatch() *SubBatch {
+	return &SubBatch{
 		namespace: s.namespace,
 		batch:     new(leveldb.Batch),
 	}
 }
 
-type Batch struct {
+type SubBatch struct {
 	namespace []byte
 	batch     *leveldb.Batch
 }
 
-func (b *Batch) Delete(key []byte) {
+func (b *SubBatch) Delete(key []byte) {
 	key = append(append([]byte(nil), b.namespace...), key...)
 	b.batch.Delete(key)
 }
 
-func (b *Batch) Put(key []byte, value []byte) {
+func (b *SubBatch) Put(key []byte, value []byte) {
 	key = append(append([]byte(nil), b.namespace...), key...)
 	b.batch.Put(key, value)
 }
 
-func (b *Batch) Len() int {
+func (b *SubBatch) Dump() []byte {
+	return b.batch.Dump()
+}
+
+func (b *SubBatch) Len() int {
 	return b.batch.Len()
 }
 
-func (b *Batch) Reset() {
+func (b *SubBatch) Reset() {
 	b.batch.Reset()
 }
 
-func (s Sublevel) Write(b *Batch, wo *opt.WriteOptions) (err error) {
+func (s Sublevel) Write(b *SubBatch, wo *opt.WriteOptions) (err error) {
 	return s.db.Write(b.batch, wo)
+}
+
+/* transactions on different stores */
+func (a AbstractLevel) NewBatch() *SuperBatch {
+	return &SuperBatch{
+		batch: new(leveldb.Batch),
+	}
+}
+
+type SuperBatch struct {
+	batch *leveldb.Batch
+}
+
+func (sb *SuperBatch) MergeSubBatch(b *SubBatch) {
+
+}
+
+func (a AbstractLevel) Write(sb *SuperBatch, wo *opt.WriteOptions) (err error) {
+	return a.leveldb.Write(sb.batch, wo)
 }
