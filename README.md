@@ -1,6 +1,6 @@
 # sublevel
 
-Separate sections of the same LevelDB. Compatible (at least in the basics) with [the nodejs sublevel](https://github.com/dominictarr/level-sublevel).
+Separate sections of the same LevelDB. Compatible (at least in the basics -- I didn't test it minuciously) with [the nodejs sublevel](https://github.com/dominictarr/level-sublevel).
 
 ```
 import "github.com/fiatjaf/sublevel"
