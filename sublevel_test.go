@@ -1,6 +1,7 @@
 package sublevel
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -13,12 +14,11 @@ func TestCRUD(t *testing.T) {
 }
 
 var _ = Describe("CRUD", func() {
-	var db AbstractLevel
+	var db *AbstractLevel
 
 	BeforeEach(func() {
-		//os.RemoveAll("/tmp/subleveltesting.leveldb")
-		db = OpenFile("/tmp/subleveltesting.leveldb", nil)
-		Expect(db.err).To(BeNil())
+		os.RemoveAll("/tmp/subleveltesting.leveldb")
+		db = File("/tmp/subleveltesting.leveldb", nil)
 	})
 
 	AfterEach(func() {
@@ -36,6 +36,15 @@ var _ = Describe("CRUD", func() {
 
 	//	})
 	//})
+
+	Context("standalone subs", func() {
+		It("should open two subs on the same file from different places", func() {
+			_, err := File("/tmp/subleveltesting.leveldb", nil).Sub("a")
+			Expect(err).ToNot(HaveOccurred())
+			_, err = File("/tmp/subleveltesting.leveldb", nil).Sub("b")
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
 
 	Context("batch operations", func() {
 		It("should execute operations on a single sublevel", func() {

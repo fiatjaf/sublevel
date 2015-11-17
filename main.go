@@ -24,34 +24,60 @@ import (
     It is not possible to access the underlying leveldb with this
     package.
 */
-func OpenFile(dbfile string, o *opt.Options) AbstractLevel {
-	db, err := leveldb.OpenFile(dbfile, o)
-	return AbstractLevel{
-		leveldb: db,
-		err:     err,
+
+var files map[string]*AbstractLevel
+
+func init() {
+	files = make(map[string]*AbstractLevel)
+}
+
+func File(dbfile string, o *opt.Options) (a *AbstractLevel) {
+	if a, ok := files[dbfile]; ok {
+		return a
 	}
+
+	a = &AbstractLevel{
+		dbfile:  dbfile,
+		openopt: o,
+	}
+	files[dbfile] = a
+	return a
 }
 
 type AbstractLevel struct {
 	leveldb *leveldb.DB
-	err     error
+	dbfile  string
+	openopt *opt.Options
 }
 
-func (a AbstractLevel) Close() error {
-	return a.leveldb.Close()
+func (a *AbstractLevel) Close() error {
+	if a.leveldb != nil {
+		err := a.leveldb.Close()
+		if err != nil {
+			a.leveldb = nil
+		}
+		delete(files, a.dbfile)
+		return err
+	}
+	return nil
 }
 
-func (a AbstractLevel) Sub(store string) (*Sublevel, error) {
-	if a.err != nil {
-		return &Sublevel{}, a.err
+func (a *AbstractLevel) Sub(store string) (*Sublevel, error) {
+	if a.leveldb == nil {
+		db, err := leveldb.OpenFile(a.dbfile, a.openopt)
+		if err != nil {
+			return &Sublevel{}, err
+		}
+		a.leveldb = db
 	}
 	return &Sublevel{
 		namespace: []byte("!" + store + "!"),
 		db:        a.leveldb,
+		a:         a,
 	}, nil
 }
 
-func (a AbstractLevel) MustSub(store string) *Sublevel {
+func (a *AbstractLevel) MustSub(store string) *Sublevel {
 	sub, err := a.Sub(store)
 	if err != nil {
 		log.Fatal("couldn't open database file. ", err)
@@ -62,10 +88,15 @@ func (a AbstractLevel) MustSub(store string) *Sublevel {
 type Sublevel struct {
 	namespace []byte
 	db        *leveldb.DB
+	a         *AbstractLevel
 }
 
 func (s Sublevel) Close() error {
-	return s.db.Close()
+	err := s.db.Close()
+	delete(files, s.a.dbfile)
+	s.a.leveldb = nil
+	s.db = nil
+	return err
 }
 
 /* methods */
@@ -182,7 +213,7 @@ func (s Sublevel) Write(b *SubBatch, wo *opt.WriteOptions) error {
 }
 
 /* transactions on different stores */
-func (a AbstractLevel) NewBatch() *SuperBatch {
+func (a *AbstractLevel) NewBatch() *SuperBatch {
 	return &SuperBatch{}
 }
 
@@ -206,11 +237,11 @@ func (sb *SuperBatch) Reset() {
 	sb.ops = make([]AbstractBatchOperation, 0)
 }
 
-func (a AbstractLevel) Write(sb *SuperBatch, wo *opt.WriteOptions) error {
+func (a *AbstractLevel) Write(sb *SuperBatch, wo *opt.WriteOptions) error {
 	return a.leveldb.Write(makeBatchWithOps(sb.ops), wo)
 }
 
-func (a AbstractLevel) MultiBatch(subbatches ...*SubBatch) *SuperBatch {
+func (a *AbstractLevel) MultiBatch(subbatches ...*SubBatch) *SuperBatch {
 	sb := a.NewBatch()
 	for _, b := range subbatches {
 		sb.MergeSubBatch(b)
