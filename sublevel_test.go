@@ -101,5 +101,21 @@ var _ = Describe("CRUD", func() {
 			Expect(sub2.Get([]byte("andrelararesende"), nil)).To(BeEquivalentTo("1"))
 			Expect(sub2.Get([]byte("joaosayad"), nil)).To(BeEquivalentTo("1"))
 		})
+
+		It("should create batch operations on the superbatch itself", func() {
+			b := db.NewBatch()
+			b.Put("bichos", []byte("vaca"), []byte("3"))
+			b.Put("gente", []byte("josé"), []byte("1"))
+			b.Put("bichos", []byte("boi"), []byte("4"))
+			b.Delete("bichos", []byte("vaca"))
+			Expect(db.Write(b, nil)).To(Succeed())
+
+			sub1 := db.Sub("bichos")
+			sub2 := db.Sub("gente")
+			Expect(sub2.Get([]byte("josé"), nil)).To(BeEquivalentTo("1"))
+			Expect(sub1.Get([]byte("boi"), nil)).To(BeEquivalentTo("4"))
+			_, err := sub1.Get([]byte("vaca"), nil)
+			Expect(err).To(HaveOccurred())
+		})
 	})
 })

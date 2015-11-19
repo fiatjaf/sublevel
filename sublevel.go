@@ -52,9 +52,13 @@ func (a AbstractLevel) Close() error {
 
 func (a AbstractLevel) Sub(store string) *Sublevel {
 	return &Sublevel{
-		namespace: []byte("!" + store + "!"),
+		namespace: makeNamespace(store),
 		db:        a.leveldb,
 	}
+}
+
+func makeNamespace(store string) []byte {
+	return []byte("!" + store + "!")
 }
 
 type Sublevel struct {
@@ -186,6 +190,16 @@ func (a AbstractLevel) NewBatch() *SuperBatch {
 
 type SuperBatch struct {
 	ops []AbstractBatchOperation
+}
+
+func (sb *SuperBatch) Put(store string, key []byte, value []byte) {
+	key = append(append([]byte(nil), makeNamespace(store)...), key...)
+	sb.ops = append(sb.ops, AbstractBatchOperation{"PUT", key, value})
+}
+
+func (sb *SuperBatch) Delete(store string, key []byte) {
+	key = append(append([]byte(nil), makeNamespace(store)...), key...)
+	sb.ops = append(sb.ops, AbstractBatchOperation{"DELETE", key, nil})
 }
 
 func (sb *SuperBatch) MergeSubBatch(b *SubBatch) {

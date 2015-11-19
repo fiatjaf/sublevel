@@ -26,7 +26,7 @@ if err != nil {
 // batch on a single sublevel:
 sub := db.Sub("some-things")
 batch := sub.NewBatch()
-batch.Put([]byte("newthing"))
+batch.Put([]byte("newthing"), []byte("true"))
 batch.Delete([]byte("oldthing"))
 _ := sub.Write(batch)
 // committed.
@@ -34,16 +34,25 @@ _ := sub.Write(batch)
 // batch on different sublevels:
 othersub := db.Sub("other-things")
 otherbatch := othersub.NewBatch()
-otherbatch.Put([]byte("new-other-thing"))
+otherbatch.Put([]byte("new-other-thing"), []byte("true"))
 otherbatch.Delete([]byte("old-other-thing"))
 
 batchagain := sub.NewBatch()
 batchagain.Delete([]byte("newthing"))
-batchagain.Put([]byte("newestthing"))
+batchagain.Put([]byte("newestthing"), []byte("true"))
 
 superbatch := db.MultiBatch(otherbatch, batchagain)
 _ := db.Write(superbatch, nil)
 // committed.
+// ~
+// or
+b := db.NewBatch()
+b.Put("some-things", []byte("newthing"), []byte("true"))
+b.Delete("other-things", []byte("old-other-thing"))
+b.Put("other-things", []byte("new-other-thing"), []byte("true"))
+b.Delete("some-things", []byte("newthing"))
+b.Put("some-things", []byte("newestthing"), []byte("true"))
+db.Write(b, nil)
 ```
 
 **sublevel** is built on top of [goleveldb](http://godoc.org/github.com/syndtr/goleveldb/leveldb) and supports most methods from there (not all, but in most cases everything you'll need).
