@@ -24,39 +24,37 @@ import (
     It is not possible to access the underlying leveldb with this
     package.
 */
-func OpenFile(dbfile string, o *opt.Options) AbstractLevel {
+func Open(dbfile string, o *opt.Options) (*AbstractLevel, error) {
 	db, err := leveldb.OpenFile(dbfile, o)
-	return AbstractLevel{
-		leveldb: db,
-		err:     err,
+	if err != nil {
+		return nil, err
 	}
+	return &AbstractLevel{
+		leveldb: db,
+	}, nil
+}
+
+func MustOpen(dbfile string, o *opt.Options) *AbstractLevel {
+	db, err := Open(dbfile, o)
+	if err != nil {
+		log.Fatal("couldn't open leveldb at file " + dbfile)
+	}
+	return db
 }
 
 type AbstractLevel struct {
 	leveldb *leveldb.DB
-	err     error
 }
 
 func (a AbstractLevel) Close() error {
 	return a.leveldb.Close()
 }
 
-func (a AbstractLevel) Sub(store string) (*Sublevel, error) {
-	if a.err != nil {
-		return &Sublevel{}, a.err
-	}
+func (a AbstractLevel) Sub(store string) *Sublevel {
 	return &Sublevel{
 		namespace: []byte("!" + store + "!"),
 		db:        a.leveldb,
-	}, nil
-}
-
-func (a AbstractLevel) MustSub(store string) *Sublevel {
-	sub, err := a.Sub(store)
-	if err != nil {
-		log.Fatal("couldn't open database file. ", err)
 	}
-	return sub
 }
 
 type Sublevel struct {

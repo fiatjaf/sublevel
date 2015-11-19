@@ -13,12 +13,11 @@ func TestCRUD(t *testing.T) {
 }
 
 var _ = Describe("CRUD", func() {
-	var db AbstractLevel
+	var db *AbstractLevel
 
 	BeforeEach(func() {
 		//os.RemoveAll("/tmp/subleveltesting.leveldb")
-		db = OpenFile("/tmp/subleveltesting.leveldb", nil)
-		Expect(db.err).To(BeNil())
+		db = MustOpen("/tmp/subleveltesting.leveldb", nil)
 	})
 
 	AfterEach(func() {
@@ -39,7 +38,7 @@ var _ = Describe("CRUD", func() {
 
 	Context("batch operations", func() {
 		It("should execute operations on a single sublevel", func() {
-			sub := db.MustSub("planoreal")
+			sub := db.Sub("planoreal")
 			b := sub.NewBatch()
 			b.Put([]byte("persioaryda"), []byte("6"))
 			b.Put([]byte("gustavofranco"), []byte("7"))
@@ -61,13 +60,13 @@ var _ = Describe("CRUD", func() {
 		})
 
 		It("should execute operations on different sublevels", func() {
-			sub1 := db.MustSub("planoreal")
+			sub1 := db.Sub("planoreal")
 			b1 := sub1.NewBatch()
 			b1.Delete([]byte("persioaryda"))
 			b1.Put([]byte("persioarida"), []byte("6"))
 			b1.Put([]byte("pedromalan"), []byte("5"))
 
-			sub2 := db.MustSub("planocruzado")
+			sub2 := db.Sub("planocruzado")
 			b2 := sub2.NewBatch()
 			b2.Put([]byte("persioarida"), []byte("2"))
 			b2.Put([]byte("andrelararesende"), []byte("1"))
@@ -85,10 +84,10 @@ var _ = Describe("CRUD", func() {
 		})
 
 		It("should use different syntax for multisublevel batch", func() {
-			sub1 := db.MustSub("planoreal")
+			sub1 := db.Sub("planoreal")
 			b1 := sub1.NewBatch()
 
-			sub2 := db.MustSub("planocruzado")
+			sub2 := db.Sub("planocruzado")
 			b2 := sub2.NewBatch()
 			b2.Put([]byte("joaosayad"), []byte("1"))
 
