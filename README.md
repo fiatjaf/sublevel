@@ -6,6 +6,8 @@ Separate sections of the same LevelDB. Compatible (at least in the basics -- I d
 [![API documentation on Godoc.org](https://img.shields.io/badge/godoc-reference-orange.svg)](https://godoc.org/github.com/fiatjaf/sublevel)
 
 ```go
+package main
+
 import "github.com/fiatjaf/sublevel"
 
 sub := sublevel.MustOpen("example.db").Sub("specific-stuff")
